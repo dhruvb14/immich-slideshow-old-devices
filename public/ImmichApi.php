@@ -82,7 +82,6 @@ class ImmichApi {
             $url = "{$this->immich_url}/api/search/metadata";
             $body = json_encode([
                 'albumIds' => [$album_id],
-                'withExif' => true,
                 'size' => 1000,
                 'page' => $page,
             ]);
@@ -126,10 +125,10 @@ class ImmichApi {
                     continue;
                 }
 
-                // Determine orientation based on image dimensions
+                // Determine orientation based on image dimensions (v3 exposes these as top-level fields)
                 $orientation = 'landscape';
-                if (isset($asset['exifInfo']['exifImageHeight']) && isset($asset['exifInfo']['exifImageWidth'])) {
-                    if ($asset['exifInfo']['exifImageHeight'] > $asset['exifInfo']['exifImageWidth']) {
+                if (isset($asset['height']) && isset($asset['width'])) {
+                    if ($asset['height'] > $asset['width']) {
                         $orientation = 'portrait';
                     }
                 }
