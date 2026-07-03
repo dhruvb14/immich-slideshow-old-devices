@@ -63,7 +63,7 @@ class ImmichApi {
 
     /**
      * Get album assets
-     * 
+     *
      * @param string $album_id Album ID
      * @return array List of album assets
      * @throws Exception If there's an error in the request
@@ -73,57 +73,76 @@ class ImmichApi {
             throw new InvalidArgumentException('Album ID is required');
         }
 
-        $url = "{$this->immich_url}/api/albums/{$album_id}";
-        $ch = curl_init($url);
-        
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            "x-api-key: {$this->api_key}",
-            "Accept: application/json"
-        ]);
-
-        $response = curl_exec($ch);
-        if ($response === false) {
-            $error = "Error: " . curl_error($ch);
-            error_log($error);
-            throw new Exception($error);
-        }
-
-        $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-
-        if ($http_code !== 200 || $response === false) {
-            $error = "HTTP error $http_code when connecting to Immich $response";
-            error_log($error);
-            throw new Exception($error);
-        }
-
-        $data = json_decode($response, true);
-        
-        if (!is_array($data) || !isset($data['assets'])) {
-            $error = "Invalid response from Immich: $response";
-            error_log($error);
-            throw new Exception($error);
-        }
-
+        // Immich v3 removed assets from GET /api/albums/{id}.
+        // Use POST /api/search/metadata with albumIds instead, paginating until done.
         $photos = [];
-        foreach ($data['assets'] as $asset) {
-            if (!isset($asset['id']) || $asset['isArchived'] || $asset['isTrashed']) {
-                continue;
+        $page = 1;
+
+        do {
+            $url = "{$this->immich_url}/api/search/metadata";
+            $body = json_encode([
+                'albumIds' => [$album_id],
+                'withExif' => true,
+                'size' => 1000,
+                'page' => $page,
+            ]);
+
+            $ch = curl_init($url);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                "x-api-key: {$this->api_key}",
+                "Accept: application/json",
+                "Content-Type: application/json"
+            ]);
+
+            $response = curl_exec($ch);
+            if ($response === false) {
+                $error = "Error: " . curl_error($ch);
+                error_log($error);
+                throw new Exception($error);
             }
 
-            // Determine orientation based on image dimensions
-            $orientation = 'landscape';
-            if (isset($asset['exifInfo']['exifImageHeight']) && isset($asset['exifInfo']['exifImageWidth'])) {
-                if ($asset['exifInfo']['exifImageHeight'] > $asset['exifInfo']['exifImageWidth']) {
-                    $orientation = 'portrait';
+            $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($http_code !== 200) {
+                $error = "HTTP error $http_code when connecting to Immich $response";
+                error_log($error);
+                throw new Exception($error);
+            }
+
+            $data = json_decode($response, true);
+
+            if (!is_array($data) || !isset($data['assets']['items'])) {
+                $error = "Invalid response from Immich: $response";
+                error_log($error);
+                throw new Exception($error);
+            }
+
+            foreach ($data['assets']['items'] as $asset) {
+                if (!isset($asset['id']) || $asset['isArchived'] || $asset['isTrashed']) {
+                    continue;
                 }
+
+                // Determine orientation based on image dimensions
+                $orientation = 'landscape';
+                if (isset($asset['exifInfo']['exifImageHeight']) && isset($asset['exifInfo']['exifImageWidth'])) {
+                    if ($asset['exifInfo']['exifImageHeight'] > $asset['exifInfo']['exifImageWidth']) {
+                        $orientation = 'portrait';
+                    }
+                }
+
+                $photos[] = [
+                    'id' => $asset['id'],
+                    'orientation' => $orientation
+                ];
             }
 
-            $photos[] = [
-                'id' => $asset['id'],
-                'orientation' => $orientation
-            ];
-        }
+            $nextPage = $data['assets']['nextPage'] ?? null;
+            $page = $nextPage !== null ? (int)$nextPage : null;
+        } while ($page !== null);
 
         return $photos;
     }
