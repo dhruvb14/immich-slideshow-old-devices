@@ -104,7 +104,6 @@ class ImmichApi {
             }
 
             $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
 
             if ($http_code !== 200) {
                 $error = "HTTP error $http_code when connecting to Immich $response";
