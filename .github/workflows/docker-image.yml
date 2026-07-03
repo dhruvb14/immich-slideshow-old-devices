@@ -66,6 +66,6 @@ jobs:
     - name: Build and push to GHCR
       uses: docker/build-push-action@v6
       with:
-        push: ${{ github.event_name == 'push' }}
+        push: true
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
