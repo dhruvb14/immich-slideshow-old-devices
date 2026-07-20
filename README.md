@@ -66,6 +66,7 @@ RANDOM_ORDER=false
 STATUS_BAR_STYLE=black-translucent
 IMAGES_ORIENTATION=all
 CROP_TO_SCREEN=true
+IMAGE_QUALITY=preview
 ```
 
 ## Usage
@@ -101,6 +102,7 @@ The application will be available at `http://localhost:8080`
 | STATUS_BAR_STYLE     | Style of the iOS status bar                          | black-translucent | No       |
 | IMAGES_ORIENTATION   | Orientation of the images (landscape/portrait/all)   | all               | No       |
 | CROP_TO_SCREEN       | Crop images to fill the screen (true) or fit (false) | true              | No       |
+| IMAGE_QUALITY        | Image size requested from Immich (preview/fullsize). `preview` is server-side resized and recommended; `fullsize` needs much more memory for large photos | preview           | No       |
 
 ## Management UI
 

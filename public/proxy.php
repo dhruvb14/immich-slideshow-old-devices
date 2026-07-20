@@ -21,19 +21,22 @@ if (!$asset_id) {
 }
 
 try {
-    // Set cache headers (1 hour)
-    header('Cache-Control: public, max-age=3600');
-    header('Expires: ' . gmdate('D, d M Y H:i:s', time() + 3600) . ' GMT');
+    // Get asset from Immich API. Default to 'preview' (already resized by the
+    // Immich server): decoding a full size photo can exceed PHP's memory limit.
+    $image_quality = $configuration->get(Configuration::IMAGE_QUALITY);
+    if (!in_array($image_quality, ['preview', 'fullsize'])) {
+        $image_quality = 'preview';
+    }
 
-    // Get asset from Immich API (always get the full size image)
     $api = new ImmichApi($immich_url, $immich_api_key);
-    $data = $api->getAsset($asset_id, 'fullsize');
+    $data = $api->getAsset($asset_id, $image_quality);
 
     // Create image from binary data
     $source = imagecreatefromstring($data[1]);
     if ($source === false) {
         throw new Exception("Failed to create image from source");
     }
+    $data[1] = '';
 
     // Get original dimensions
     $source_width = imagesx($source);
@@ -109,17 +112,24 @@ try {
         (int)$dst_w, (int)$dst_h,  // Destination width, height
         (int)$src_w, (int)$src_h   // Source width, height
     );
+    unset($source);
 
-    // Send headers
+    // Send headers. Cache headers only now, once the image is ready: errors
+    // must never be cacheable.
+    header('Cache-Control: public, max-age=3600');
+    header('Expires: ' . gmdate('D, d M Y H:i:s', time() + 3600) . ' GMT');
     header("Content-Type: {$data[0]}");
-    
+
     // Output image based on type
     if ($data[0] === 'image/jpeg') {
         imagejpeg($resized, null, 85);
     } elseif ($data[0] === 'image/png') {
         imagepng($resized);
     }
-} catch (\Exception $e) {
-    http_response_code(500);
+} catch (\Throwable $e) {
+    if (!headers_sent()) {
+        header('Cache-Control: no-store');
+        http_response_code(500);
+    }
     echo "Error: Unable to process image. " . $e->getMessage();
 }

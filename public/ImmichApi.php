@@ -202,9 +202,10 @@ class ImmichApi {
 
             try {
                 fwrite($temp, $image_data);
+                $image_data = '';
                 $meta = stream_get_meta_data($temp);
                 $image = @imagecreatefromwebp($meta['uri']);
-                
+
                 if ($image === false) {
                     throw new Exception('Error converting WebP image');
                 }
@@ -212,6 +213,7 @@ class ImmichApi {
                 ob_start();
                 imagejpeg($image, null, 85); // Add compression quality
                 $image_data = ob_get_clean();
+                unset($image);
                 $content_type = 'image/jpeg';
             } finally {
                 fclose($temp);

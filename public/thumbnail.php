@@ -16,10 +16,6 @@ if (!$asset_id) {
 }
 
 try {
-    // Set cache headers (1 hour)
-    header('Cache-Control: public, max-age=3600');
-    header('Expires: ' . gmdate('D, d M Y H:i:s', time() + 3600) . ' GMT');
-
     // Get asset thumbnail from Immich API
     $api = new ImmichApi($immich_url, $immich_api_key);
     $data = $api->getAsset($asset_id, 'thumbnail');
@@ -30,16 +26,22 @@ try {
         throw new Exception("Failed to create image from source");
     }
 
-    // Send headers
+    // Send headers. Cache headers only now, once the image is ready: errors
+    // must never be cacheable.
+    header('Cache-Control: public, max-age=3600');
+    header('Expires: ' . gmdate('D, d M Y H:i:s', time() + 3600) . ' GMT');
     header("Content-Type: {$data[0]}");
-    
+
     // Output image based on type
     if ($data[0] === 'image/jpeg') {
         imagejpeg($image, null, 85);
     } elseif ($data[0] === 'image/png') {
         imagepng($image);
     }
-} catch (\Exception $e) {
-    http_response_code(500);
+} catch (\Throwable $e) {
+    if (!headers_sent()) {
+        header('Cache-Control: no-store');
+        http_response_code(500);
+    }
     echo "Error: Unable to process image. " . $e->getMessage();
 }

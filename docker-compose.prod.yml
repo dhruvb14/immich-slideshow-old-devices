@@ -14,3 +14,4 @@ services:
       - STATUS_BAR_STYLE=${STATUS_BAR_STYLE:-black-translucent}
       - IMAGES_ORIENTATION=${IMAGES_ORIENTATION:-all}
       - CROP_TO_SCREEN=${CROP_TO_SCREEN:-true}
+      - IMAGE_QUALITY=${IMAGE_QUALITY:-preview} # preview (recommended) / fullsize

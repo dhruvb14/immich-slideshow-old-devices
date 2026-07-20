@@ -80,7 +80,7 @@ try {
     if ($random_order) {
         shuffle($photos);
     }
-} catch (\Exception $e) {
+} catch (\Throwable $e) {
     http_response_code(500);
     echo "Error: Unable to fetch photos - " . $e->getMessage();
     exit;
