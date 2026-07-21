@@ -28,7 +28,10 @@ class Configuration {
         if (isset($this->fileConfig[$key])) {
             return $this->fileConfig[$key];
         }
-        return getenv($key);
+        // getenv() returns false for missing variables, which would defeat the
+        // null coalescing (?? ) defaults used by the callers
+        $value = getenv($key);
+        return $value === false ? null : $value;
     }
 
     public static function save(array $config) {
