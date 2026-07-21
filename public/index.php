@@ -54,7 +54,9 @@ try {
         if (empty($id)) continue;
         
         try {
-            $album_photos = $api->getAlbumAssets($id);
+            $album_photos = ($id === Configuration::FAVORITES_ID)
+                ? $api->getFavoriteAssets()
+                : $api->getAlbumAssets($id);
             $photos = array_merge($photos, $album_photos);
         } catch (Exception $e) {
             // Log error but continue with other albums

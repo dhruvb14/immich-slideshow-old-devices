@@ -40,10 +40,20 @@ $configuration = new Configuration();
 $immich_url = $configuration->get(Configuration::IMMICH_URL);
 $immich_api_key = $configuration->get(Configuration::IMMICH_API_KEY);
 
+$albums = [];
+$favorites_thumbnail_asset_id = null;
+
 try {
     // Initialize API and fetch albums
     $api = new ImmichApi($immich_url, $immich_api_key);
     $albums = $api->getAlbums();
+
+    try {
+        $favorites_thumbnail_asset_id = $api->getFirstFavoriteAssetId();
+    } catch (Exception $e) {
+        // The favorites card is still shown with a placeholder thumbnail
+        error_log("Warning: Unable to fetch favorites thumbnail - " . $e->getMessage());
+    }
 } catch (Exception $e) {
     $message = "Error: Unable to fetch albums - " . $e->getMessage();
 }
@@ -81,7 +91,22 @@ $status_bar_style = $configuration->get(Configuration::STATUS_BAR_STYLE) ?? 'bla
     <h1>Select albums</h1>
     <form method="POST">
         <div class="album-grid">
-            <?php foreach ($albums as $album): 
+            <?php
+                $favorites_id = Configuration::FAVORITES_ID;
+                $favorites_thumbnail = $favorites_thumbnail_asset_id
+                    ? "thumbnail.php?asset=$favorites_thumbnail_asset_id"
+                    : "assets/apple-icon-180.png";
+                $favorites_checked = in_array($favorites_id, $album_ids) ? 'checked' : '';
+            ?>
+            <label for="<?= $favorites_id ?>">
+                <input type="checkbox" name="album_ids[]" id="<?= $favorites_id ?>" value="<?= $favorites_id ?>" class="album-checkbox" <?= $favorites_checked ?>>
+                <div class="album-card">
+                    <div class="checkmark">✓</div>
+                    <img src="<?= $favorites_thumbnail ?>" loading="lazy">
+                    <p>⭐ Favorites</p>
+                </div>
+            </label>
+            <?php foreach ($albums as $album):
                 $assetId = $album['albumThumbnailAssetId'] ?? null;
                 $thumbnailUrl = $assetId ? "thumbnail.php?asset=$assetId" : "";
                 

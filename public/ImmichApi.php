@@ -73,16 +73,50 @@ class ImmichApi {
             throw new InvalidArgumentException('Album ID is required');
         }
 
-        // Immich v3 removed assets from GET /api/albums/{id}.
-        // Use POST /api/search/metadata with albumIds instead, paginating until done.
+        return $this->searchAssets(['albumIds' => [$album_id]]);
+    }
+
+    /**
+     * Get favorite assets
+     *
+     * @return array List of favorite assets
+     * @throws Exception If there's an error in the request
+     */
+    public function getFavoriteAssets(): array {
+        return $this->searchAssets(['isFavorite' => true]);
+    }
+
+    /**
+     * Get the ID of one favorite asset, for use as a thumbnail
+     *
+     * @return string|null Asset ID, or null if there are no favorites
+     * @throws Exception If there's an error in the request
+     */
+    public function getFirstFavoriteAssetId(): ?string {
+        $photos = $this->searchAssets(['isFavorite' => true], 1, false);
+        return $photos[0]['id'] ?? null;
+    }
+
+    /**
+     * Search assets with the given filters
+     *
+     * Immich v3 removed assets from GET /api/albums/{id}.
+     * Use POST /api/search/metadata instead, paginating until done.
+     *
+     * @param array $filters Search filters (e.g. albumIds, isFavorite)
+     * @param int $size Page size
+     * @param bool $paginate Whether to fetch all pages or just the first one
+     * @return array List of assets
+     * @throws Exception If there's an error in the request
+     */
+    private function searchAssets(array $filters, int $size = 1000, bool $paginate = true): array {
         $photos = [];
         $page = 1;
 
         do {
             $url = "{$this->immich_url}/api/search/metadata";
-            $body = json_encode([
-                'albumIds' => [$album_id],
-                'size' => 1000,
+            $body = json_encode($filters + [
+                'size' => $size,
                 'page' => $page,
             ]);
 
@@ -139,7 +173,7 @@ class ImmichApi {
             }
 
             $nextPage = $data['assets']['nextPage'] ?? null;
-            $page = $nextPage !== null ? (int)$nextPage : null;
+            $page = ($paginate && $nextPage !== null) ? (int)$nextPage : null;
         } while ($page !== null);
 
         return $photos;

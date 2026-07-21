@@ -28,6 +28,7 @@ I searched for projects already created for this purpose and found the great [Im
 - Automatic page reload after showing all photos
 - Built-in image caching for better performance
 - Filter images by orientation (landscape/portrait/all)
+- Use your Immich favorites as a source, alone or combined with albums
 - Pause/resume slide
 - Management UI [@JosephAntony1](https://github.com/JosephAntony1)
 - Remote control support [@JosephAntony1](https://github.com/JosephAntony1)
@@ -95,7 +96,7 @@ The application will be available at `http://localhost:8080`
 | -------------------- | ---------------------------------------------------- | ----------------- | -------- |
 | IMMICH_URL           | URL of your Immich server                            | -                 | Yes      |
 | IMMICH_API_KEY       | Your Immich API key                                  | -                 | Yes      |
-| ALBUM_ID             | ID of the album(s) to display (comma separated)      | -                 | Yes      |
+| ALBUM_ID             | ID of the album(s) to display (comma separated). Use the special value `favorites` to show your Immich favorites | -                 | Yes      |
 | CAROUSEL_DURATION    | Time in seconds between slides                       | 5                 | No       |
 | CSS_BACKGROUND_COLOR | Background color of the slideshow                    | black             | No       |
 | RANDOM_ORDER         | Show photos in random order                          | false             | No       |
@@ -112,11 +113,13 @@ You can override the environment variables using management UI, navigate to:
 http://localhost:8080/management.php
 ```
 
+The album grid includes a special "⭐ Favorites" card that shows your Immich favorites in the slideshow, selectable like any other album.
+
 ## Query Parameters
 
 You can override the environment variables using query parameters in the URL:
 
-- `album_id`: Override the ALBUM_ID (can be comma separated)
+- `album_id`: Override the ALBUM_ID (can be comma separated). Use the special value `favorites` to show your Immich favorites, e.g. `?album_id=favorites` or `?album_id=favorites,your_album_id`
 - `duration`: Override the CAROUSEL_DURATION
 - `background`: Override the CSS_BACKGROUND_COLOR
 - `random`: Override the RANDOM_ORDER (use 'true' or 'false')

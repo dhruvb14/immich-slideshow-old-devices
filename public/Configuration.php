@@ -4,6 +4,9 @@ class Configuration {
     private const CONFIG_FILE = 'config.json';
     private array $fileConfig;
 
+    // Synthetic album ID used to select Immich favorites as a slideshow source
+    const FAVORITES_ID = 'favorites';
+
     const IMMICH_URL = 'IMMICH_URL';
     const IMMICH_API_KEY = 'IMMICH_API_KEY';
     const ALBUM_ID = 'ALBUM_ID';
